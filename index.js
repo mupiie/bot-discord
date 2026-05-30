@@ -64,7 +64,7 @@ client.once(Events.ClientReady, async (bot) => {
     );
 
     await channel.send({
-      content: "**IN / OUT SYSTEM**\nKlik tombol di bawah:",
+      content: "**IN / OUT KOTA**\nKlik tombol di bawah:",
       components: [row]
     });
 
