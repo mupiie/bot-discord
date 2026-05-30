@@ -32,12 +32,10 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-// ===== DISCORD CLIENT =====
+// ===== DISCORD CLIENT (FIX INTENT) =====
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages
+    GatewayIntentBits.Guilds
   ]
 });
 
@@ -77,17 +75,17 @@ client.once(Events.ClientReady, async (bot) => {
   }
 });
 
-// ===== BUTTON HANDLER (DEBUG FULL) =====
+// ===== BUTTON HANDLER =====
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
-  console.log("BUTTON DIKLIK:", interaction.customId);
+  console.log("BUTTON:", interaction.customId);
 
   try {
     const guild = interaction.guild;
     if (!guild) return;
 
-    const member = await guild.members.fetch(interaction.user.id);
+    const member = interaction.member; // 🔥 FIX: tidak pakai fetch (lebih stabil)
 
     const role = guild.roles.cache.get(ROLE_IN);
     if (!role) {
