@@ -12,7 +12,7 @@ const {
 
 const app = express();
 
-// ===== WEB SERVER (biar Render tidak sleep) =====
+// ===== WEB SERVER =====
 app.get("/", (req, res) => {
   res.send("Bot is running");
 });
@@ -21,21 +21,23 @@ app.listen(process.env.PORT || 3000, () => {
   console.log("Server aktif");
 });
 
-// ===== CEK ENV (biar tidak crash) =====
+// ===== ENV =====
 const TOKEN = process.env.TOKEN;
 const ROLE_IN = process.env.ROLE_IN;
 const LOG_CHANNEL = process.env.LOG_CHANNEL;
 const PANEL_CHANNEL = process.env.PANEL_CHANNEL;
 
 if (!TOKEN) {
-  console.error("TOKEN belum diisi di ENV!");
+  console.log("TOKEN tidak ada!");
   process.exit(1);
 }
 
+// ===== DISCORD CLIENT =====
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages
   ]
 });
 
@@ -46,7 +48,10 @@ client.once(Events.ClientReady, async (bot) => {
   try {
     const channel = await client.channels.fetch(PANEL_CHANNEL);
 
-    if (!channel) return console.log("Panel channel tidak ditemukan");
+    if (!channel) {
+      console.log("❌ Panel channel salah / tidak ditemukan");
+      return;
+    }
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -61,36 +66,44 @@ client.once(Events.ClientReady, async (bot) => {
     );
 
     await channel.send({
-      content: "**IN / OUT KOTA**\nKlik tombol di bawah:",
+      content: "**IN / OUT SYSTEM**\nKlik tombol di bawah:",
       components: [row]
     });
 
+    console.log("Panel berhasil dikirim");
+
   } catch (err) {
-    console.log("Gagal kirim panel:", err);
+    console.log("ERROR kirim panel:", err);
   }
 });
 
-// ===== BUTTON HANDLER =====
+// ===== BUTTON HANDLER (DEBUG FULL) =====
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
-  try {
-    const member = await interaction.guild.members.fetch(interaction.user.id);
-    const role = interaction.guild.roles.cache.get(ROLE_IN);
-    const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL);
+  console.log("BUTTON DIKLIK:", interaction.customId);
 
+  try {
+    const guild = interaction.guild;
+    if (!guild) return;
+
+    const member = await guild.members.fetch(interaction.user.id);
+
+    const role = guild.roles.cache.get(ROLE_IN);
     if (!role) {
       return interaction.reply({
-        content: "Role tidak ditemukan!",
+        content: "❌ Role tidak ditemukan (cek ROLE_IN)",
         ephemeral: true
       });
     }
+
+    const logChannel = guild.channels.cache.get(LOG_CHANNEL);
 
     if (interaction.customId === "btn_in") {
       await member.roles.add(role);
 
       await interaction.reply({
-        content: "Kamu sudah IN 🟢",
+        content: "✅ Kamu sudah IN 🟢",
         ephemeral: true
       });
 
@@ -103,7 +116,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await member.roles.remove(role);
 
       await interaction.reply({
-        content: "Kamu sudah OUT 🔴",
+        content: "✅ Kamu sudah OUT 🔴",
         ephemeral: true
       });
 
@@ -113,7 +126,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
   } catch (err) {
-    console.log("Error interaction:", err);
+    console.log("ERROR BUTTON:", err);
   }
 });
 
