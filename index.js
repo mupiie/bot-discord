@@ -7,7 +7,8 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  Events
+  Events,
+  MessageFlags
 } = require("discord.js");
 
 const app = express();
@@ -32,11 +33,9 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-// ===== DISCORD CLIENT (FIX INTENT) =====
+// ===== DISCORD CLIENT =====
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds
-  ]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 // ===== READY =====
@@ -47,7 +46,7 @@ client.once(Events.ClientReady, async (bot) => {
     const channel = await client.channels.fetch(PANEL_CHANNEL);
 
     if (!channel) {
-      console.log("❌ Panel channel salah / tidak ditemukan");
+      console.log("❌ Panel channel tidak ditemukan");
       return;
     }
 
@@ -85,24 +84,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const guild = interaction.guild;
     if (!guild) return;
 
-    const member = interaction.member; // 🔥 FIX: tidak pakai fetch (lebih stabil)
+    // FIX: fetch member biar aman
+    const member = await guild.members.fetch(interaction.user.id);
 
     const role = guild.roles.cache.get(ROLE_IN);
     if (!role) {
       return interaction.reply({
         content: "❌ Role tidak ditemukan (cek ROLE_IN)",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
     const logChannel = guild.channels.cache.get(LOG_CHANNEL);
 
+    // ===== IN =====
     if (interaction.customId === "btn_in") {
       await member.roles.add(role);
 
       await interaction.reply({
         content: "✅ Kamu sudah IN 🟢",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
 
       if (logChannel) {
@@ -110,12 +111,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
 
+    // ===== OUT =====
     if (interaction.customId === "btn_out") {
       await member.roles.remove(role);
 
       await interaction.reply({
         content: "✅ Kamu sudah OUT 🔴",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
 
       if (logChannel) {
